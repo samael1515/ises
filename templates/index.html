@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        input, button {
+            margin: 5px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #analysisResults {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginForm">
+        <h2>Iniciar Sesión</h2>
+        <form id="loginForm">
+            <label for="username">Usuario:</label>
+            <input type="text" id="username" name="username">
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password" name="password">
+            <button type="button" onclick="login()">Iniciar Sesión</button>
+        </form>
+    </div>
+
+    <div id="fileUpload" style="display: none;">
+        <h2>Subir Archivo</h2>
+        <form id="dataForm">
+            <label for="fileType">Seleccione el tipo de archivo:</label>
+            <select id="fileType">
+                <option value="csv">CSV</option>
+                <option value="json">JSON</option>
+            </select>
+            <label for="file">Seleccione el archivo:</label>
+            <input type="file" id="file" accept=".csv,.json">
+            <button type="button" onclick="submitData()">Enviar</button>
+        </form>
+        <div id="result"></div>
+        <div id="analysisResults" style="display: none;">
+            <h2>Análisis Estadístico</h2>
+            <div id="mean"></div>
+            <div id="stdDev"></div>
+            <div id="correlation"></div>
+        </div>
+    </div>
+
+    <script>
+        function login() {
+            var username = document.getElementById('username').value;
+            var password = document.getElementById('password').value;
+
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.access_token) {
+                        localStorage.setItem('access_token', data.access_token);
+                        console.log("Token de autorización:", data.access_token); // Imprimir el token en la consola
+                        document.getElementById('loginForm').style.display = 'none';
+                        document.getElementById('fileUpload').style.display = 'block';
+                    } else {
+                        alert('Credenciales inválidas');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function submitData() {
+            var fileType = document.getElementById('fileType').value;
+            var file = document.getElementById('file').files[0];
+            var formData = new FormData();
+            formData.append('tipo', fileType);
+            formData.append('ruta', file);
+
+            console.log("Tipo de archivo:", fileType);
+            console.log("Archivo recibido:", file);
+
+            var token = localStorage.getItem('access_token');
+
+            fetch('/analisis-basico', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                document.getElementById('result').innerText = "Cargado exitosamente";
+                if (data.resultado) {
+                    document.getElementById('mean').innerText = 'Media:';
+                    for (let column in data.resultado.media) {
+                        document.getElementById('mean').innerText += ` ${column}: ${data.resultado.media[column]},`;
+                    }
+                    document.getElementById('mean').innerText = document.getElementById('mean').innerText.slice(0, -1);
+                    document.getElementById('stdDev').innerText = 'Desviación Estándar:';
+                    for (let column in data.resultado.desviacion_estandar) {
+                        document.getElementById('stdDev').innerText += ` ${column}: ${data.resultado.desviacion_estandar[column]},`;
+                    }
+                    document.getElementById('stdDev').innerText = document.getElementById('stdDev').innerText.slice(0, -1);
+                    document.getElementById('correlation').innerText = 'Correlación:';
+                    for (let row in data.resultado.correlacion) {
+                        for (let column in data.resultado.correlacion[row]) {
+                            document.getElementById('correlation').innerText += ` ${row}-${column}: ${data.resultado.correlacion[row][column]},`;
+                        }
+                    }
+                    document.getElementById('correlation').innerText = document.getElementById('correlation').innerText.slice(0, -1);
+                    document.getElementById('analysisResults').style.display = 'block';
+                } else {
+                    alert('No se recibieron datos de análisis');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').innerText = "Error al cargar los datos";
+            });
+        }
+
+        function performAnalysis() {
+            var validationPassed = validateData();
+            if (validationPassed) {
+                submitData();
+            } else {
+                alert("Los datos no son válidos. Por favor, corrija los errores antes de continuar.");
+            }
+        }
+    </script>
+</body>
+</html>
