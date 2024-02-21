@@ -17,7 +17,7 @@ Clona el repositorio desde GitHub:
 
 bash
 Copy code
-git clone https://github.com/tu_usuario/nombre_aplicativo.git
+git clone (https://github.com/samael1515/ises.git)
 Accede al directorio de la prueba:
 
 bash
