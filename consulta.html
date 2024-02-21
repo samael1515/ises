@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        input, button {
+            margin: 5px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <form id="dataForm">
+        <label for="fileType">Seleccione el tipo de archivo:</label>
+        <select id="fileType">
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+        </select>
+        <label for="file">Seleccione el archivo:</label>
+        <input type="file" id="file" accept=".csv,.json">
+        <button type="button" onclick="submitData()">Enviar</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        function submitData() {
+            var fileType = document.getElementById('fileType').value;
+            var file = document.getElementById('file').files[0];
+            var formData = new FormData();
+            formData.append('tipo', fileType);  // Agrega el tipo de archivo al FormData
+            formData.append('ruta', file);
+
+            var token = localStorage.getItem('access_token');  // Obtén el token de autorización
+            console.log("Token de autorización:", token);  // Verifica el token en la consola
+
+            if (token) {
+                fetch('/analisis', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token  // Agrega el token de autorización al encabezado
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('result').innerText = JSON.stringify(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+
+                console.log("Solicitud enviada");  // Verifica que la solicitud se envió correctamente
+            } else {
+                console.log("No hay token disponible en el localStorage.");
+            }
+        }
+    </script>
+</body>
+</html>
